@@ -27,6 +27,7 @@ parser.add_argument('--transformer', default=["OneDirection", "None"], nargs=2, 
 
 args = parser.parse_args()
 opts = vars(args)
+print("Command-line arguments:\n", opts)
 
 # Verify
 if opts["checkpoint_resume"] != 0 and opts["checkpoint_resume"] != -1:
@@ -48,7 +49,7 @@ checkpoint_dir = os.path.join(
     version)
 
 if opts["checkpoint_resume"] == 0:
-    os.makedirs(checkpoint_dir, exist_ok=False)
+    os.makedirs(checkpoint_dir, exist_ok=True)
 
 # Saving training settings
 opts_file = os.path.join(checkpoint_dir, "opts.json")
@@ -70,6 +71,7 @@ vocab_size = {'biggan256': 1000, 'biggan512': 1000}.get(opts['generator'][0])
 
 # Setting up Transformer
 # --------------------------------------------------------------------------------------------------------------
+print("Setting up Transformer")
 transformer = opts["transformer"][0]
 transformer_arguments = opts["transformer"][1]
 if transformer_arguments != "None":
@@ -84,6 +86,7 @@ transformation = transformation.to(device)
 
 # Setting up Generator
 # --------------------------------------------------------------------------------------------------------------
+print("Setting up Generator")
 generator = opts["generator"][0]
 generator_arguments = opts["generator"][1]
 if generator_arguments != "None":
@@ -102,6 +105,7 @@ generator = generator.to(device)
 
 # Setting up Assessor
 # --------------------------------------------------------------------------------------------------------------
+print("Setting up Assessor")
 assessor_elements = getattr(assessors, opts['assessor'])(True)
 if isinstance(assessor_elements, tuple):
     assessor = assessor_elements[0]
@@ -124,6 +128,7 @@ if hasattr(assessor, 'parameters'):
 
 # Training
 # --------------------------------------------------------------------------------------------------------------
+print("Training")
 # optimizer
 optimizer = optim.Adam(transformation.parameters(), lr=0.0002)
 losses = utils.common.AverageMeter(name='Loss')
@@ -158,6 +163,7 @@ ys = np.random.randint(0, vocab_size, size=zs.shape[0])
 
 # loop over data batches
 for batch_start in range(0, num_samples, batch_size):
+    print(f"{batch_start}/{num_samples}")
 
     # skip batches we've already done (this would happen when resuming from a checkpoint)
     if batch_start <= checkpoint_resume and checkpoint_resume != 0:
@@ -165,6 +171,7 @@ for batch_start in range(0, num_samples, batch_size):
         continue
 
     # input batch
+    print("input batch")
     s = slice(batch_start, min(num_samples, batch_start + batch_size))
     z = torch.from_numpy(zs[s]).type(torch.FloatTensor).to(device)
     y = torch.from_numpy(ys[s]).to(device)
@@ -174,6 +181,7 @@ for batch_start in range(0, num_samples, batch_size):
     step_sizes_broadcast = torch.from_numpy(step_sizes_broadcast).type(torch.FloatTensor).to(device)
 
     # ganalyze steps
+    print("ganalyze steps")
     gan_images = generator(z, utils.pytorch.one_hot(y))
     gan_images = input_transform(utils.pytorch.denorm(gan_images))
     gan_images = gan_images.view(-1, *gan_images.shape[-3:])
@@ -189,9 +197,11 @@ for batch_start in range(0, num_samples, batch_size):
     out_scores_transformed = output_transform(assessor(gan_images_transformed)).to(device).float()
 
     # compute loss
+    print("compute loss")
     loss = transformation.compute_loss(out_scores_transformed, target_scores, batch_start, loss_file)
 
     # backwards
+    print("backwards")
     loss.backward()
     optimizer.step()
 

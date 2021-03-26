@@ -68,6 +68,9 @@ python train_tf.py \
  --train_alpha_a -0.5 --train_alpha_b 0.5 \
  --gpu_id 0 --num_samples 400000 --checkpoint_resume 0
 ```
+```bash
+python train_pytorch.py --generator biggan256 None --assessor emonet --transformer OneDirection None --train_alpha_a -0.5 --train_alpha_b 0.5 --gpu_id 0 --num_samples 400000 --checkpoint_resume 0
+```
 
 During training, this script will store checkpoints of the transformer module in a subdirectory of `checkpoints` whose full path depends on the experiment's configuration. For the command above, checkpoints are stored in `checkpoints/biggan__biggan256/memnet/OneDirection/<commit_hash>`, where `<commit_hash>` is the active commit's hash assigned by git (if you checkout a new/different commit of the code, it will be stored in a new directory as to not overwrite previous experiments).
 
